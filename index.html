@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>F7al Had Nhar Sync</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a friendly workshop tool from a Moroccan storytelling channel — direct, warm, no fuss.
+   IDEA: an editing bench — the waveform is the tape, every tap drops a clay-red marker on it.
+   PICTURE: the live subtitle preview + waveform with markers, large, at the top of the tool.
+   COLOUR and TYPE: warm paper / night ink grounds, clay red #c8452c dominant, saffron #f2b632 accent; Cairo throughout (the channel's subtitle font).
+   LAYOUT: lock card first; then one column: file + script, the bench (preview, wave, tap), review, export. */
+:root{color-scheme:light dark;--bg:light-dark(#f6f1ea,#141110);--panel:light-dark(#fffdf9,#1f1a18);--ink:light-dark(#1d1714,#f3ece4);--mute:light-dark(#6f625a,#b3a69c);--line:light-dark(#e3d8cc,#352c28);--clay:#c8452c;--clay2:light-dark(#a8361f,#e0604a);--saf:#f2b632;--wave:light-dark(#d9c9b9,#4a3d37)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Cairo,system-ui,sans-serif;overflow-x:clip}
+a{color:var(--clay2)}
+.wrap{max-width:980px;margin:0 auto;padding:clamp(20px,4vw,48px) max(4vw,16px)}
+header.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+.mark{width:44px;height:44px;border-radius:12px;background:var(--clay);display:grid;place-items:center;color:#fff;font-weight:800;font-size:20px;flex:none}
+header h1{font-size:clamp(26px,4vw,40px);line-height:1.05;margin:0;font-weight:800;text-wrap:balance}
+header p{margin:0;color:var(--mute)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:clamp(16px,3vw,28px);margin-bottom:18px}
+h2{font-size:20px;margin:0 0 4px;font-weight:800}
+.sub{color:var(--mute);margin:0 0 14px;font-size:15px}
+.ar{font-size:15px;color:var(--mute)}
+label{font-weight:600}
+input[type=text],textarea,select{font:16px/1.5 Cairo,system-ui,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%}
+textarea{min-height:170px;resize:vertical}
+input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--saf);outline-offset:2px}
+button{font:600 16px Cairo,system-ui,sans-serif;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+button.pri{background:var(--clay);border-color:var(--clay);color:#fff}
+button:disabled{opacity:.45;cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media(max-width:700px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.file{display:flex;flex-direction:column;gap:8px}
+.fname{color:var(--mute);font-size:14px;overflow-wrap:anywhere}
+/* lock */
+#lock{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+#lock .card{max-width:520px;width:100%;text-align:center;padding:clamp(24px,5vw,44px)}
+#lock .mark{margin:0 auto 16px;width:64px;height:64px;font-size:28px;border-radius:18px}
+#lock h1{font-size:clamp(28px,5vw,40px);line-height:1.08;margin:0 0 8px;text-wrap:balance}
+#lock .code{font-size:24px;text-align:center;letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin:18px 0 10px}
+#err{color:var(--clay2);min-height:26px;font-weight:600}
+.steps{display:flex;flex-direction:column;gap:6px;text-align:start;margin:18px 0 0;padding:14px 16px;border-radius:12px;background:var(--bg);font-size:15px}
+/* bench */
+.preview{background:#0f0c0b;color:#fff;border-radius:16px;padding:22px 18px;min-height:150px;display:flex;flex-direction:column;justify-content:center;gap:8px;text-align:center}
+.cur{font-size:clamp(22px,3.6vw,32px);font-weight:800;line-height:1.3}
+.nxt{color:#b9aca2;font-size:16px}
+.cnt{color:var(--saf);font-weight:800;font-size:14px}
+.fig{color:var(--wave);position:relative;height:120px;margin:14px 0;border-radius:12px;background:var(--bg);border:1px solid var(--line);cursor:pointer}
+.fig canvas{position:absolute;inset:0;width:100%;height:100%}
+.tap{width:100%;min-height:88px;font-size:24px;font-weight:800;border-radius:16px;background:var(--saf);border:0;color:#1d1714;margin-top:4px;transition:transform .08s}
+.tap:active,.tap.hit{transform:scale(.98)}
+@media(prefers-reduced-motion:reduce){.tap{transition:none}}
+#speed{width:auto}
+.time{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+.small{font-size:14px;color:var(--mute)}
+/* review */
+.cues{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.cues li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line)}
+.cues li:last-child{border-bottom:0}
+.cues .t{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600;color:var(--clay2);background:none;border:0;padding:0 4px;min-height:36px}
+.cues .x{text-align:start;overflow-wrap:anywhere}
+.cues .nb button{min-height:36px;padding:0 10px}
+.cues li.todo{color:var(--mute)}
+#srt{font-size:14px;line-height:1.45;min-height:200px;direction:ltr}
+.opts{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:12px}
+.opts label{display:flex;flex-direction:column;gap:4px;font-size:14px}
+.opts select,.opts input{width:auto;min-width:120px}
+footer{text-align:center;color:var(--mute);font-size:14px;padding:10px 0 30px}
+.hide{display:none!important}
+.kbd{display:inline-block;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:0 6px;font-size:13px}
+</style>
+</head>
+<body>
+
+<section id="lock">
+  <div class="card">
+    <div class="mark">ف</div>
+    <h1>Find the code hidden in the episode</h1>
+    <p class="ar" dir="rtl">لقا الكود المخبّي فالحلقة ديال «فحال هاد النهار» باش تحلّ الأداة فابور</p>
+    <form id="unlockForm">
+      <input id="codeIn" class="code" type="text" autocomplete="off" spellcheck="false" placeholder="CODE" aria-label="Code">
+      <div id="err" role="status"></div>
+      <button class="pri" type="submit" style="width:100%">Unlock the tool · حلّ</button>
+    </form>
+    <div class="steps">
+      <div>1. Watch today's episode of <b>F7al Had Nhar</b>.</div>
+      <div>2. The code flashes on screen for one second. Keep your eyes open.</div>
+      <div>3. Type it here. Free, no sign-up.</div>
+    </div>
+    <p class="small" style="margin:16px 0 0">
+      <a href="https://www.youtube.com/@f7alhadnhar" target="_blank" rel="noopener">YouTube</a> ·
+      <a href="https://www.instagram.com/f7al.had.nhar" target="_blank" rel="noopener">Instagram</a> ·
+      <a href="https://www.tiktok.com/@f7al.had.nhar" target="_blank" rel="noopener">TikTok</a>
+    </p>
+  </div>
+</section>
+
+<main id="app" class="wrap hide">
+  <header class="top">
+    <div class="mark">ف</div>
+    <div>
+      <h1>Subtitle sync for your voice</h1>
+      <p>Tap along with your own voice and get a ready .srt, made for darija.</p>
+    </div>
+  </header>
+
+  <div class="grid2">
+    <div class="card file">
+      <h2>1. Your audio</h2>
+      <p class="sub">Voice-over or video (mp3, wav, m4a, mp4). It stays on your device.</p>
+      <input id="audioIn" type="file" accept="audio/*,video/*" aria-label="Audio or video file">
+      <div class="fname" id="fname">No file yet</div>
+    </div>
+    <div class="card">
+      <h2>2. Your script</h2>
+      <p class="sub">One subtitle per line, in the order you say it.</p>
+      <textarea id="script" dir="auto" placeholder="كل سطر هو ترجمة وحدة&#10;One line = one subtitle"></textarea>
+      <div class="small" id="lineCount">0 lines</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3. Tap along</h2>
+    <p class="sub">Press <span class="kbd">Space</span> or the big button the moment you <b>start</b> each line. <span class="kbd">Backspace</span> undoes the last tap.</p>
+    <div class="preview" aria-live="polite">
+      <div class="cnt" id="cnt">0 / 0</div>
+      <div class="cur" id="cur" dir="auto">Load your audio and script</div>
+      <div class="nxt" id="nxt" dir="auto"></div>
+    </div>
+    <div class="fig" id="fig" title="Click to jump"><canvas id="wave"></canvas></div>
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <button id="playBtn" disabled>Play</button>
+        <button id="restartBtn" disabled>Restart</button>
+        <button id="undoBtn" disabled>Undo tap</button>
+      </div>
+      <div class="row">
+        <span class="time" id="clock">0:00.0 / 0:00.0</span>
+        <select id="speed" aria-label="Playback speed">
+          <option value="1">Speed 1×</option><option value="0.75">Speed 0.75×</option><option value="0.5">Speed 0.5×</option>
+        </select>
+      </div>
+    </div>
+    <button class="tap" id="tapBtn" disabled>TAP · دابا</button>
+    <p class="small" style="margin:10px 0 0">Tip: slower speed makes tapping easier. The times stay exact.</p>
+  </div>
+
+  <div class="card">
+    <h2>4. Check and fine-tune</h2>
+    <p class="sub">Click a time to hear that line. Use −/+ to shift it by 0.1 s.</p>
+    <ul class="cues" id="cues"></ul>
+  </div>
+
+  <div class="card">
+    <h2>5. Export</h2>
+    <div class="opts">
+      <label>Reaction delay
+        <select id="offset"><option value="0">0 s</option><option value="0.1">0.1 s</option><option value="0.15" selected>0.15 s</option><option value="0.25">0.25 s</option></select>
+      </label>
+      <label>Max characters per subtitle
+        <select id="maxc"><option value="0">No split</option><option value="32">32</option><option value="42" selected>42</option><option value="55">55</option></select>
+      </label>
+    </div>
+    <textarea id="srt" readonly aria-label="SRT output"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="pri" id="dlBtn" disabled>Download .srt</button>
+      <button id="copyBtn" disabled>Copy</button>
+      <button id="resetBtn">Clear taps</button>
+      <span class="small" id="msg" role="status"></span>
+    </div>
+  </div>
+
+  <footer>
+    Made by <b>فحال هاد النهار · F7al Had Nhar</b>: a story of the day, in darija.<br>
+    <a href="https://www.youtube.com/@f7alhadnhar" target="_blank" rel="noopener">YouTube @f7alhadnhar</a> ·
+    <a href="https://www.instagram.com/f7al.had.nhar" target="_blank" rel="noopener">Instagram</a> ·
+    <a href="https://www.tiktok.com/@f7al.had.nhar" target="_blank" rel="noopener">TikTok</a>
+  </footer>
+</main>
+
+<audio id="au" preload="auto" class="hide"></audio>
+
+<script>
+{
+/* ===== Codes: SHA-free hash of the active codes. To rotate, replace this list. ===== */
+const CODES = ["6343535196222648"]; // code of the 24 Nov episode
+
+const SALT = "f7al:";
+const cyrb = (s,seed=7)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<s.length;i++){ch=s.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return String(4294967296*(2097151&h2)+(h1>>>0));};
+const norm = s=>s.toUpperCase().replace(/[^A-Z0-9]/g,"");
+const store = {get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const $ = id=>document.getElementById(id);
+
+const lock=$("lock"), app=$("app");
+const openApp=()=>{lock.classList.add("hide");app.classList.remove("hide");drawWave();};
+if (CODES.includes(store.get("f7s_key"))) openApp();
+$("unlockForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const h=cyrb(SALT+norm($("codeIn").value));
+  if (CODES.includes(h)){store.set("f7s_key",h);openApp();}
+  else {$("err").textContent="Not this one. Watch the episode again 👀";}
+});
+
+/* ===== State ===== */
+const au=$("au"), cv=$("wave"), fig=$("fig");
+let lines=[], marks=[], peaks=null, dur=0;
+try{ const s=JSON.parse(store.get("f7s_state")||"{}"); if(s.script) $("script").value=s.script; if(Array.isArray(s.marks)) marks=s.marks; }catch(e){}
+const save=()=>store.set("f7s_state",JSON.stringify({script:$("script").value,marks}));
+
+const fmt=t=>{t=Math.max(0,t);const m=Math.floor(t/60),s=t-m*60;return m+":"+s.toFixed(1).padStart(4,"0");};
+const srtT=t=>{t=Math.max(0,t);const ms=Math.round(t*1000),h=Math.floor(ms/3600000),m=Math.floor(ms/60000)%60,s=Math.floor(ms/1000)%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")+","+String(ms%1000).padStart(3,"0");};
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function readLines(){
+  lines=$("script").value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  if (marks.length>lines.length) marks.length=lines.length;
+  $("lineCount").textContent=lines.length+" line"+(lines.length===1?"":"s");
+}
+
+/* ===== Audio ===== */
+$("audioIn").addEventListener("change",async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  $("fname").textContent=f.name+" · reading…";
+  au.src=URL.createObjectURL(f);
+  ["playBtn","restartBtn","tapBtn"].forEach(id=>$(id).disabled=false);
+  peaks=null; drawWave();
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext; const ac=new AC();
+    const buf=await ac.decodeAudioData(await f.arrayBuffer());
+    const ch=buf.getChannelData(0), N=1400, step=Math.max(1,Math.floor(ch.length/N));
+    peaks=new Float32Array(N); let mx=0.0001;
+    for(let i=0;i<N;i++){let m=0;for(let j=i*step,e2=Math.min(ch.length,j+step);j<e2;j+=4){const v=Math.abs(ch[j]);if(v>m)m=v;}peaks[i]=m;if(m>mx)mx=m;}
+    for(let i=0;i<N;i++) peaks[i]/=mx;
+    dur=buf.duration; ac.close&&ac.close();
+    $("fname").textContent=f.name+" · "+fmt(dur);
+  }catch(err){ $("fname").textContent=f.name+" · waveform unavailable, tapping still works"; }
+  drawWave(); render();
+});
+au.addEventListener("loadedmetadata",()=>{ if(!dur) dur=au.duration||0; render(); });
+au.addEventListener("play",()=>{$("playBtn").textContent="Pause";loop();});
+au.addEventListener("pause",()=>{$("playBtn").textContent="Play";live();});
+au.addEventListener("ended",()=>{$("playBtn").textContent="Play";});
+$("playBtn").addEventListener("click",()=>{ au.paused?au.play().catch(()=>{}):au.pause(); });
+$("restartBtn").addEventListener("click",()=>{ au.currentTime=0; drawWave(); render(); });
+$("speed").addEventListener("change",e=>{ au.playbackRate=+e.target.value; });
+
+/* ===== Tapping ===== */
+function tap(){
+  if(!au.src||!lines.length) return;
+  if(au.paused){ au.play().catch(()=>{}); if(marks.length===0 && au.currentTime<0.05) return; }
+  if(marks.length>=lines.length) return;
+  const t=Math.max(0,au.currentTime-(+$("offset").value));
+  const prev=marks.length?marks[marks.length-1]:-1;
+  marks.push(Math.max(t,prev+0.05));
+  const b=$("tapBtn"); b.classList.add("hit"); setTimeout(()=>b.classList.remove("hit"),90);
+  save(); render();
+}
+function undo(){ if(!marks.length) return; marks.pop(); save(); render(); }
+$("tapBtn").addEventListener("click",tap);
+$("undoBtn").addEventListener("click",undo);
+document.addEventListener("keydown",e=>{
+  if(app.classList.contains("hide")) return;
+  const tg=e.target.tagName; if(tg==="TEXTAREA"||tg==="INPUT"||tg==="SELECT") return;
+  if(e.code==="Space"){e.preventDefault();tap();}
+  else if(e.code==="Backspace"){e.preventDefault();undo();}
+});
+$("script").addEventListener("input",()=>{readLines();save();render();});
+$("offset").addEventListener("change",render);
+$("maxc").addEventListener("change",render);
+$("resetBtn").addEventListener("click",()=>{marks=[];save();render();});
+
+/* ===== Cues ===== */
+function splitText(txt,max){
+  if(!max||txt.length<=max) return [txt];
+  const parts=Math.ceil(txt.length/max), words=txt.split(/\s+/), target=txt.length/parts, out=[]; let cur="";
+  for(const w of words){ const nx=cur?cur+" "+w:w; if(cur && nx.length>target && out.length<parts-1){out.push(cur);cur=w;} else cur=nx; }
+  if(cur) out.push(cur); return out;
+}
+function buildCues(){
+  const max=+$("maxc").value, cues=[];
+  for(let i=0;i<marks.length;i++){
+    const st=marks[i], txt=lines[i];
+    const natural=st+Math.min(7,Math.max(1.5,txt.length*0.09+1.2));
+    let en=i+1<marks.length?Math.min(marks[i+1]-0.04,natural):(dur?Math.min(dur,natural):natural);
+    if(i+1<marks.length && marks[i+1]-st<9) en=marks[i+1]-0.04;
+    const ch=splitText(txt,max), tot=ch.reduce((a,c)=>a+c.length,0); let t=st;
+    ch.forEach((c,k)=>{const e2=k===ch.length-1?en:t+(en-st)*c.length/tot; cues.push({s:t,e:Math.max(e2,t+0.3),x:c}); t=e2;});
+  }
+  return cues;
+}
+function toSrt(){ return buildCues().map((c,i)=>(i+1)+"\n"+srtT(c.s)+" --> "+srtT(c.e)+"\n"+c.x+"\n").join("\n"); }
+
+function live(){
+  const n=marks.length, L=lines.length;
+  $("cnt").textContent=n+" / "+L;
+  const t=au.currentTime||0; let idx=-1;
+  for(let i=0;i<n;i++) if(marks[i]<=t+0.0001) idx=i;
+  if(!L){ $("cur").textContent="Paste your script in step 2"; $("nxt").textContent=""; }
+  else if(n<L && (!au.paused || n===0)){ $("cur").textContent=lines[n]; $("nxt").textContent=lines[n+1]?"Next: "+lines[n+1]:"Last line"; }
+  else { $("cur").textContent=idx>=0?lines[idx]:"…"; $("nxt").textContent=n>=L?"All lines tapped ✓":""; }
+  $("clock").textContent=fmt(t)+" / "+fmt(dur||au.duration||0);
+  drawWave();
+}
+function render(){
+  live(); const n=marks.length;
+  $("undoBtn").disabled=!n;
+  $("cues").innerHTML=lines.map((x,i)=>i<n
+    ?`<li><button class="t" data-go="${i}">${fmt(marks[i])}</button><span class="x" dir="auto">${esc(x)}</span><span class="nb row"><button data-nb="${i}" data-d="-0.1" aria-label="Earlier">−</button><button data-nb="${i}" data-d="0.1" aria-label="Later">+</button></span></li>`
+    :`<li class="todo"><span class="time">—</span><span class="x" dir="auto">${esc(x)}</span><span></span></li>`).join("");
+  const srt=n?toSrt():""; $("srt").value=srt;
+  $("dlBtn").disabled=$("copyBtn").disabled=!srt;
+}
+$("cues").addEventListener("click",e=>{
+  const go=e.target.closest("[data-go]"), nb=e.target.closest("[data-nb]");
+  if(go){ au.currentTime=marks[+go.dataset.go]; au.play().catch(()=>{}); }
+  if(nb){ const i=+nb.dataset.nb; let v=marks[i]+(+nb.dataset.d);
+    const lo=i?marks[i-1]+0.05:0, hi=i+1<marks.length?marks[i+1]-0.05:Infinity;
+    marks[i]=Math.min(hi,Math.max(lo,v)); save(); render(); }
+});
+
+/* ===== Waveform ===== */
+function drawWave(){
+  const W=fig.clientWidth, H=fig.clientHeight; if(!W) return;
+  const r=window.devicePixelRatio||1; cv.width=W*r; cv.height=H*r;
+  const g=cv.getContext("2d"); g.setTransform(r,0,0,r,0,0); g.clearRect(0,0,W,H);
+  const D=dur||au.duration||0;
+  g.fillStyle=getComputedStyle(fig).color||"#ccc";
+  if(peaks){ const bw=W/peaks.length; for(let i=0;i<peaks.length;i++){const h=Math.max(1,peaks[i]*(H-28)); g.fillRect(i*bw,(H-h)/2+6,Math.max(1,bw),h);} }
+  else { g.fillRect(0,H/2+5,W,2); }
+  if(!D) return;
+  g.font="600 11px Cairo, sans-serif"; g.textAlign="center";
+  marks.forEach((m,i)=>{ const x=m/D*W; g.fillStyle="#c8452c"; g.fillRect(x-1,12,2,H-12); if(W>520||i%2===0) g.fillText(String(i+1),Math.min(W-8,Math.max(8,x)),10); });
+  const px=(au.currentTime||0)/D*W; g.fillStyle="#f2b632"; g.fillRect(px-1.5,0,3,H);
+}
+fig.addEventListener("click",e=>{ const D=dur||au.duration; if(!D) return; const b=fig.getBoundingClientRect(); au.currentTime=(e.clientX-b.left)/b.width*D; render(); });
+const ro=new ResizeObserver(drawWave); ro.observe(fig);
+let raf=0; function loop(){ cancelAnimationFrame(raf); const step=()=>{ live(); if(!au.paused) raf=requestAnimationFrame(step); }; raf=requestAnimationFrame(step); }
+
+/* ===== Export ===== */
+const fileName=()=>{ const f=$("audioIn").files[0]; return (f?f.name.replace(/\.[^.]+$/,""):"subtitles")+".srt"; };
+let dl=null;
+if(window.claude&&window.claude.use){ window.claude.use("downloads").then(d=>{dl=d;}).catch(()=>{}); }
+$("dlBtn").addEventListener("click",async()=>{
+  const data=toSrt(), name=fileName();
+  if(dl){ try{ await dl.save({filename:name,data}); $("msg").textContent="Saved ✓"; return; }catch(e){ $("msg").textContent="Download declined or blocked. Use Copy instead."; return; } }
+  try{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob(["﻿"+data],{type:"application/x-subrip"})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); $("msg").textContent="If nothing downloaded, use Copy."; }
+  catch(e){ $("msg").textContent="Use Copy, then paste into a file named .srt"; }
+});
+$("copyBtn").addEventListener("click",async()=>{
+  try{ await navigator.clipboard.writeText($("srt").value); $("msg").textContent="Copied ✓"; }
+  catch(e){ $("srt").select(); $("msg").textContent="Press Ctrl+C to copy"; }
+});
+
+readLines(); render();
+}
+</script>
+</body>
+</html>
